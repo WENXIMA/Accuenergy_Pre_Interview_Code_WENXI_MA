@@ -1,3 +1,4 @@
+
 <template>
   <div class="locator-container">
     <h1 class="ui header">Locator</h1>
@@ -8,7 +9,7 @@
       <button class="ui button" @click="getCurrentLocation">Get Current Location</button>
     </div>
 
-    <section id="map" class="ui segment"></section>
+    <div id="map" class="ui segment"></div>
 
     <table v-show="searchResults.length > 0" class="ui table fixed bottom attached">
       <thead>
@@ -38,29 +39,29 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
 
 export default {
   name: 'Locator',
   data() {
     return {
-      map: null,
-      searchQuery: '',
-      searchResults: [],
-      currentPage: 1,
-      pageSize: 10,
+      map: null, //Google Map Object
+      searchQuery: '', //User Input Location
+      searchResults: [], //Array to store the results
+      markers:[], //Array to store the markers
+      currentPage: 1, //Current Page for table
+      pageSize: 10, //Number of rows per page in the table
     };
   },
   mounted() {
-    onMounted(this.loadMap);
+    this.loadMap();
   },
   methods: {
     loadMap() {
+      //Load map based on Toronto location
       this.map = new google.maps.Map(document.getElementById('map'), {
         center: { lat: 43.651070, lng: -79.347015 },
         zoom: 15,
       });
-      this.map.setMap(this.map);
     },
     searchLocation() {
       if (this.searchQuery) {
@@ -68,26 +69,27 @@ export default {
         geocoder.geocode({ address: this.searchQuery }, (results, status) => {
           if (status === 'OK') {
             const result = {
-              name: results[0].formatted_address,
-              location: results[0].geometry.location,
-              timezone: new Date().toLocaleString('en-US', { timeZoneName: 'short' }),
+              name: results[0].formatted_address, // Get formatted address
+              location: results[0].geometry.location, //Get the location coordinates
+              timezone: new Date().toLocaleString('en-US', { timeZoneName: 'short' }), //Get the timezone
             };
-            this.searchResults.push(result);
-            this.showMarker(result);
+            this.searchResults.push(result); // Add the result to the array
+            this.showMarker(result); // Display the marker
           }
         });
       }
     },
     showMarker(result) {
-      new google.maps.Marker({
+      const marker = new google.maps.Marker({
         position: result.location,
         map: this.map,
       });
+      this.markers.push(marker); //Add the marker to the array
     },
     getCurrentLocation() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          (position) => {
+          (position) => { // Get current Laitude and longitude
             const latLng = new google.maps.LatLng(
               position.coords.latitude,
               position.coords.longitude
@@ -112,8 +114,16 @@ export default {
       }
     },
     deleteResult(index) {
-      this.searchResults.splice(index, 1);
-    },
+      const marker = this.markers[index];
+      marker.setMap(null); 
+
+      this.markers.splice(index, 1); // Remove markers from array
+      this.searchResults.splice(index, 1); // Remove from table
+      // Update Current pages
+      if (this.currentPage > this.totalPages) {
+        this.currentPage--;
+      }
+},
     previousPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
@@ -124,7 +134,7 @@ export default {
         this.currentPage++;
       }
     },
-    searchByEnter(){
+    searchByEnter(){ // Use keyboard enter to search
       this.searchLocation();
     }
   },
@@ -163,5 +173,9 @@ export default {
 
 .ui.pagination {
   margin-top: 10px;
+}
+#map {
+  height: 100%;
+  width:100%;
 }
 </style>
